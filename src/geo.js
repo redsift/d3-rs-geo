@@ -1,8 +1,9 @@
-import { select } from 'd3-selection';
+import { select, mouse } from 'd3-selection';
 import { json } from 'd3-request';
 import { geoGraticule, geoPath } from 'd3-geo';
 import { symbol, symbolWye } from 'd3-shape';
-import { feature, mesh } from 'topojson';
+import { max } from 'd3-array';
+import { feature, mesh, neighbors } from 'topojson';
 
 import { 
   geoAlbers,
@@ -37,20 +38,24 @@ const projections = {
   geoInterruptedMollweideHemispheres: geoInterruptedMollweideHemispheres  
 };
 
+const projectionsRatios = {
+  geoPeirceQuincuncial: { a: 1, s: 4.47613863},
+  geoPatterson: { a: 0.5700506757, s: Math.PI * 2 },
+  geoMercator: { a: 1, s: Math.PI * 2 },
+  geoOrthographic: { a: 1, s: 2 }
+}
+
 import { html as svg } from '@redsift/d3-rs-svg';
-import { body as tip } from '@redsift/d3-rs-tip';
 
 import { 
   presentation10,
   display,
-  highlights,
   fonts,
-  widths,
-  dashes
+  widths
 } from '@redsift/d3-rs-theme';
 
 const DEFAULT_SIZE = 960;
-const DEFAULT_ASPECT = 480 / 960;
+const DEFAULT_ASPECT = { a: 480 / 960, s: 2*Math.PI };
 const DEFAULT_MARGIN = 4;  // white space
 const DEFAULT_POINT_SIZE = 24; // size of the point symbol
 
@@ -78,9 +83,10 @@ export default function geo(id) {
       style = undefined,
       scale = 1.0,
       graticule = 0.5,
-      projection = geoPatterson,
-      interrupted = false,
-      country = true,
+      projection = 'geoPatterson',
+      projectionScale = null,
+      interrupted = true,
+      country = false,
       fill = null,
       points = null,
       links = null,
@@ -107,22 +113,26 @@ export default function geo(id) {
       _style = _impl.defaultStyle(theme, width);
     }
 
+    let projectionAspect = DEFAULT_ASPECT;
+
     let _projection = projection;
     if (typeof _projection === 'string') {
+      projectionAspect = projectionsRatios[_projection] || projectionAspect;
       _projection = projections[_projection];
     }
 
-    let _height = height || Math.round(width * DEFAULT_ASPECT);
+    let _height = height || Math.round(width * projectionAspect.a);
 
     function _makeFillFn() {
       let colors = () => fill;
       if (fill == null) {
-        let c = presentation10.standard;
-        colors = (d, i) => (c[i % c.length]);
+        //TODO: Should use a custom presentation for this, need at least a presentation8 for world
+        let c = presentation10.standard.filter((c,i) => (i !== presentation10.names.yellow && i !== presentation10.names.grey && i !== presentation10.names.brown));
+        colors = (d, i, g) => c[(g + presentation10.names.brown) % c.length];
       } else if (typeof fill === 'function') {
         colors = fill;
       } else if (Array.isArray(fill)) {
-        colors = (d, i) => fill[ i % fill.length ];
+        colors = (d, i, g) => fill[ g % fill.length ];
       }
       return colors;  
     }  
@@ -132,7 +142,9 @@ export default function geo(id) {
     let _linksDisplay = linksDisplay;
     if (_linksDisplay == undefined) {
       _linksDisplay = function (selection) {
-        selection.attr('stroke-dasharray', '5,5');
+        selection.attr('stroke', presentation10.standard[presentation10.names.yellow])
+                  .attr('stroke-width', '2px')
+                  .attr('stroke-dasharray', '5,3');
       }
     }
 
@@ -145,13 +157,14 @@ export default function geo(id) {
       let symbolType = _pointsDisplay;
       _pointsDisplay = function (selection) {
         let circle = symbol().type(symbolType).size(DEFAULT_POINT_SIZE);
-        selection.each(function(d, i) {
+        selection.each(function(d) {
           let node = select(this).selectAll('path').data([ d ]);
           node = node.enter().append('path').merge(node);
           node.attr('d', () => circle())
-                .attr('opacity', 0.666)
-                .attr('stroke', 'red')
-                .attr('fill', 'blue')
+                .attr('opacity', 0.9)
+                .attr('stroke', '#fff')
+                .attr('fill', presentation10.darker[presentation10.names.yellow])
+                .attr('pointer-events', 'none')
                 .attr('stroke-width', '0.5px');
         });
       }
@@ -176,9 +189,12 @@ export default function geo(id) {
       let w = root.childWidth(),
           h = root.childHeight();
 
-      let proj = _projection().scale(h / Math.PI).translate([ w / 2, h / 2 ]);
+      let proj = _projection()
+                    .scale(projectionScale || (w / projectionAspect.s))
+                    .translate([ w / 2, h / 2 ]);
 
       let path = geoPath().projection(proj);
+
 
       let clipPath = `geo-clip-${INSTANCE}`,
           clip = `geo-shape-${INSTANCE}`;
@@ -243,13 +259,17 @@ export default function geo(id) {
         let selectable = null;
         // Landmass
         if (country) {
+          let cont = feature(d, objects.countries || {}).features;
+          let neig = neighbors(objects.countries.geometries);
+
           let countries = g.select('g.country').attr('clip-path', interrupted ? `url(#${clip})` : null)
             .selectAll('path')
-            .data(feature(d, objects.countries || {}).features)
+            .data(cont)
             .enter()
             .append('path');
 
-          countries.attr('d', path).attr('fill', _color);
+          // compute g, the greedy constraint color index i.e. no adjacent countries share the same color
+          countries.attr('d', path).attr('fill', (d,i) => _color(d, i, (d.color = max(neig[i], n => cont[n].color) + 1 | 0) ));
 
           g.select('path.land').attr('d', null);
 
@@ -259,7 +279,7 @@ export default function geo(id) {
           let land = g.select('path.land')
             .datum(feature(d, objects.land || {}))
             .attr('clip-path', interrupted ? `url(#${clip})` : null)
-            .attr('fill', _color)
+            .attr('fill', (d,i) => _color(d,i,i))
             .attr('d', path);
 
           g.select('g.country').selectAll('path').attr('d', null);
@@ -269,14 +289,16 @@ export default function geo(id) {
 
         selectable.on('click', function(d,i) {
           let centroid = null;
-          if (d) {
+          if (d && d.id) {
             centroid = path.centroid(d);
+          } else {
+            centroid = mouse(this);
           }
           if (onClick) onClick.apply(_impl, [ d, i, centroid ]);
         });
 
         snode.select('rect.background').on('click', function() {
-          if (onClick) onClick.apply(_impl, [ ]);
+          if (onClick) onClick.apply(_impl, [ null, -1, mouse(this) ]);
         });
 
         // Country boundary
@@ -288,14 +310,13 @@ export default function geo(id) {
         // Links
         let arcs = g.select('g.links')
           .selectAll('path')
-          .data(links.map(d => ({ type: 'LineString', coordinates: [ [ d[0], d[1] ], [ d[2], d[3] ] ]})));
+          .data(links ? links.map(d => ({ type: 'LineString', coordinates: [ [ d[0], d[1] ], [ d[2], d[3] ] ]})) : []);
 
          arcs.exit().remove();
 
          arcs = arcs.enter().append('path')
                       .attr('fill', 'none')
-                      .attr('stroke', 'red')
-                      .attr('stroke-width', '2px')
+                      .attr('pointer-events', 'none')
                     .merge(arcs);
          arcs.attr('d', path);
                       
@@ -306,7 +327,7 @@ export default function geo(id) {
         // Points
         let pois = g.select('g.points')
           .selectAll('g')
-          .data(points);
+          .data(points ? points : []);
 
          pois.exit().remove();
 
@@ -322,7 +343,9 @@ export default function geo(id) {
          }
       })
       .catch(e => {
-        console.error(e);
+        /* eslint-disable no-console */
+        console.error('d3-rs-geo error:', e.stack);
+        /* eslint-enable no-console */
       });
 
     });
@@ -357,7 +380,7 @@ export default function geo(id) {
                     }
                 
                 ${_impl.self()} .fill {
-                      fill: antiquewhite;
+                      fill: #010539;
                     }
 
                 ${_impl.self()} .graticule {
@@ -414,6 +437,10 @@ export default function geo(id) {
   _impl.projection = function(value) {
     return arguments.length ? (projection = value, _impl) : projection;
   };     
+
+  _impl.projectionScale = function(value) {
+    return arguments.length ? (projectionScale = value, _impl) : projectionScale;
+  }; 
 
   _impl.interrupted = function(value) {
     return arguments.length ? (interrupted = value, _impl) : interrupted;
