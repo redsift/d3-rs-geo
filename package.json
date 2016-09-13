@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Generates geo maps using D3v4.",
   "keywords": [
-    "line",
+    "maps",
     "redsift",
     "d3",
     "chart"
