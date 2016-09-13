@@ -1,0 +1,55 @@
+<html>
+  <head>
+    <style>
+      
+    body {
+      margin: 0px;
+    }
+
+    </style>    
+  </head>
+  <body>
+    <div id="elm"></div>
+        
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="//static.redsift.io/reusable/d3-rs-theme/latest/d3-rs-theme.umd-es2015.min.js"></script>
+    <script src="/d3-rs-geo.umd-es2015.min.js"></script>
+    <script>
+
+    'use strict';
+
+    var zoomed = false;
+
+    var geo = d3_rs_geo.html('empty')
+        .projection('geoInterruptedBoggs')
+        .country(true)
+        .interrupted(true)
+        .points([ [ -76.852587, 38.991621 ], [ -0.076132, 51.5074 ] ])
+        .links([ [ -76.852587, 38.991621, -0.076132, 51.5074 ] ])
+        .onClick(function (d,i,c) {
+          if (zoomed || d == null) {
+            this.zoom(1).zoomX(null).zoomY(null);
+            zoomed = false;
+          } else {
+            console.log('Selected ISO 3166-1 country', d.id);
+
+            this.zoom(4).zoomX(c[0]).zoomY(c[1]);
+            zoomed = true;
+          }
+
+
+          d3.select('#elm')
+            .datum('http://static.redsift.io/thirdparty/topojson/examples/world-50m.json')
+            .transition()
+            .duration(750)
+            .call(this);
+
+        });
+
+    d3.select('#elm')
+      .datum('http://static.redsift.io/thirdparty/topojson/examples/world-50m.json')
+      .call(geo);
+
+    </script>
+  </body>
+</html>
