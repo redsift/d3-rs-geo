@@ -247,11 +247,15 @@ export default function geo(id) {
       let pdata = null;
       if (typeof data === 'string') {
         pdata = new Promise( (ok, ko) => json(data, (e,d) => e ? ko(e) : ok(d) ) );
+      } else if (data.url) {
+        pdata = new Promise( (ok, ko) => json(data.url, (e,d) => e ? ko(e) : ok(d) ) );
       } else {
         pdata = Promise.resolve(data);
       }
 
-
+      let _links = links || data.links || [];
+      let _points = points || data.points || [];
+      
       pdata
       .then(d => {
         let objects = d.objects || {};
@@ -310,7 +314,7 @@ export default function geo(id) {
         // Links
         let arcs = g.select('g.links')
           .selectAll('path')
-          .data(links ? links.map(d => ({ type: 'LineString', coordinates: [ [ d[0], d[1] ], [ d[2], d[3] ] ]})) : []);
+          .data(_links.map(d => ({ type: 'LineString', coordinates: [ [ d[0], d[1] ], [ d[2], d[3] ] ]})));
 
          arcs.exit().remove();
 
@@ -327,7 +331,7 @@ export default function geo(id) {
         // Points
         let pois = g.select('g.points')
           .selectAll('g')
-          .data(points ? points : []);
+          .data(_points);
 
          pois.exit().remove();
 
