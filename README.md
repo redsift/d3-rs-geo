@@ -12,11 +12,11 @@
 
 ### Flat map
 
-![Sample bars with a bottom orientation](https://bricks.redsift.io/reusable/d3-rs-geo.svg?_datum=[1,200,3100,1000]&orientation=bottom)
+![World map](https://bricks.redsift.io/reusable/d3-rs-geo?_datum={%22url%22:%22https://static.redsift.io/thirdparty/topojson/examples/world-50m.json%22}&offline)
 
 ### Map with country coloring and great arcs
 
-![Sample bars with a left orientation](https://bricks.redsift.io/reusable/d3-rs-geo.svg?_datum=[[1,2,4],[0,1]])
+![World map with links](https://bricks.redsift.io/reusable/d3-rs-geo?_datum={%22url%22:%22https://static.redsift.io/thirdparty/topojson/examples/world-50m.json%22}&offline)
 
 ## Usage
 
@@ -25,7 +25,9 @@
     <script src="//static.redsift.io/reusable/d3-rs-geo/latest/d3-rs-geo.umd-es2015.min.js"></script>
     <script>
         var chart = d3_rs_geo.html();
-        d3.select('body').datum('https://static.redsift.io/thirdparty/topojson/examples/world-50m.json').call(chart);
+        d3.select('body')
+            .datum('https://static.redsift.io/thirdparty/topojson/examples/world-50m.json')
+            .call(chart);
     </script>
 
 ### ES6
