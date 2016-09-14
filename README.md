@@ -18,6 +18,18 @@
 
 ![World map with links](https://bricks.redsift.io/reusable/d3-rs-geo?_datum={%22url%22:%22https://static.redsift.io/thirdparty/topojson/examples/world-50m.json%22}&offline)
 
+### Interrupted projection with points of interest
+
+![Interrupted Homolosine projection]()
+
+### USA highlighting states
+
+![USA with states]()
+
+### Stylized Europe
+
+![Funky europe]()
+
 ## Usage
 
 ### Browser

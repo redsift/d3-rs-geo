@@ -1,0 +1,31 @@
+<html>
+  <head>
+    <style>
+      
+    body {
+      margin: 0px;
+    }
+
+    </style>    
+  </head>
+  <body>
+    <div id="elm"></div>
+        
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="/d3-rs-geo.umd-es2015.js"></script>
+    <script>
+
+    'use strict';
+
+    var geo = d3_rs_geo.html('empty')
+        .points([ [ -76.852587, 38.991621 ], [ -0.076132, 51.5074 ] ])
+        .links([ [ -76.852587, 38.991621, -0.076132, 51.5074 ] ])
+        .projection('geoAlbersUsa')
+        .geometry('states'); // land, states, counties
+
+    d3.select('#elm')
+      .datum({ url: 'https://static.redsift.io/thirdparty/topojson/examples/us-10m.json' })
+      .call(geo);
+    </script>
+  </body>
+</html>

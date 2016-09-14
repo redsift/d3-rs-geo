@@ -1,0 +1,29 @@
+<html>
+  <head>
+    <style>
+      
+    body {
+      margin: 0px;
+    }
+
+    </style>    
+  </head>
+  <body>
+    <div id="elm"></div>
+        
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="/d3-rs-geo.umd-es2015.js"></script>
+    <script>
+
+    'use strict';
+
+    var geo = d3_rs_geo.html('empty')
+        .projection('geoInterruptedBoggs')
+        .geometry('countries');
+
+    d3.select('#elm')
+      .datum({ url: 'https://static.redsift.io/thirdparty/topojson/examples/world-50m.json' })
+      .call(geo);
+    </script>
+  </body>
+</html>

@@ -42,7 +42,8 @@ const projectionsRatios = {
   geoPeirceQuincuncial: { a: 1, s: 4.47613863},
   geoPatterson: { a: 0.5700506757, s: Math.PI * 2 },
   geoMercator: { a: 1, s: Math.PI * 2 },
-  geoOrthographic: { a: 1, s: 2 }
+  geoOrthographic: { a: 1, s: 2 },
+  geoAlbersUsa: { a: 0.5230861575, s: 0.91 }
 }
 
 import { html as svg } from '@redsift/d3-rs-svg';
@@ -86,7 +87,7 @@ export default function geo(id) {
       projection = 'geoPatterson',
       projectionScale = null,
       interrupted = true,
-      country = false,
+      geometry = 'land',
       fill = null,
       points = null,
       links = null,
@@ -95,7 +96,8 @@ export default function geo(id) {
       zoomY = undefined,
       pointsDisplay = undefined,
       linksDisplay = undefined,
-      onClick = null;
+      onClick = null,
+      onReady = null;
 
   INSTANCE = INSTANCE + 1;
 
@@ -169,7 +171,16 @@ export default function geo(id) {
         });
       }
     }
-
+    let _onReady = onReady;
+    if (_onReady == null) {
+      _onReady = function (err, ok) {
+        if (err) {
+          /* eslint-disable no-console */
+          console.error('d3-rs-geo error:', err.stack);
+          /* eslint-enable no-console */
+        }
+      }
+    }
     selection.each(function() {
       let node = select(this);  
       
@@ -190,11 +201,14 @@ export default function geo(id) {
           h = root.childHeight();
 
       let proj = _projection()
-                    .scale(projectionScale || (w / projectionAspect.s))
                     .translate([ w / 2, h / 2 ]);
 
-      let path = geoPath().projection(proj);
+      let pscale = projectionScale || projectionAspect.s ? (w / projectionAspect.s) : null;
+      if (pscale != null) {
+        proj.scale(pscale);
+      }
 
+      let path = geoPath().projection(proj);
 
       let clipPath = `geo-clip-${INSTANCE}`,
           clip = `geo-shape-${INSTANCE}`;
@@ -211,8 +225,7 @@ export default function geo(id) {
 
         g.append('use').attr('class', 'border').attr('pointer-events', 'none');
         g.append('use').attr('class', 'fill').attr('pointer-events', 'none');
-        g.append('path').attr('class', 'land');
-        g.append('g').attr('class', 'country');
+        g.append('g').attr('class', 'geometry');
         g.append('path').attr('class', 'boundary');
         g.append('g').attr('class', 'links');
         g.append('g').attr('class', 'points');
@@ -260,36 +273,34 @@ export default function geo(id) {
       .then(d => {
         let objects = d.objects || {};
 
-        let selectable = null;
-        // Landmass
-        if (country) {
-          let cont = feature(d, objects.countries || {}).features;
-          let neig = neighbors(objects.countries.geometries);
+        let collection = objects[geometry];
+        if (collection === undefined) throw new Error(`${geometry} is not avaiable in topojson`);
 
-          let countries = g.select('g.country').attr('clip-path', interrupted ? `url(#${clip})` : null)
+        let host = g.select('g.geometry');
+        let selectable = null;
+        if (collection.type === 'GeometryCollection') {
+          let cont = feature(d, collection).features;
+          selectable = host
             .selectAll('path')
             .data(cont)
             .enter()
             .append('path');
 
-          // compute g, the greedy constraint color index i.e. no adjacent countries share the same color
-          countries.attr('d', path).attr('fill', (d,i) => _color(d, i, (d.color = max(neig[i], n => cont[n].color) + 1 | 0) ));
+          // compute g, the greedy constraint color index i.e. no adjacent selectable share the same color
+          let neig = neighbors(collection.geometries);
+          selectable.attr('fill', (d,i) => _color(d, i, (d.color = max(neig[i], n => cont[n].color) + 1 | 0) ));
 
-          g.select('path.land').attr('d', null);
+        } else if (collection.type === 'MultiPolygon') {
+          selectable = host.selectAll('path').data([ feature(d, objects.land || {}) ]);
+          selectable.exit().remove();
+          selectable = selectable.enter().append('path').merge(selectable);
 
-          selectable = countries;
+          selectable.attr('fill', (d,i) => _color(d,i,i));
         } else {
-
-          let land = g.select('path.land')
-            .datum(feature(d, objects.land || {}))
-            .attr('clip-path', interrupted ? `url(#${clip})` : null)
-            .attr('fill', (d,i) => _color(d,i,i))
-            .attr('d', path);
-
-          g.select('g.country').selectAll('path').attr('d', null);
-
-          selectable = land;
+          throw new Error(`Object type "${collection.type}"" is not supported`);
         }
+
+        selectable.attr('d', path).attr('clip-path', interrupted ? `url(#${clip})` : null);
 
         selectable.on('click', function(d,i) {
           let centroid = null;
@@ -305,7 +316,7 @@ export default function geo(id) {
           if (onClick) onClick.apply(_impl, [ null, -1, mouse(this) ]);
         });
 
-        // Country boundary
+        // boundary
         g.select('path.boundary')
           .datum(mesh(d, objects.countries || {}, (a, b) => a !== b))
           .attr('clip-path', interrupted ? `url(#${clip})` : null)
@@ -339,19 +350,19 @@ export default function geo(id) {
 
          pois.attr('transform', d => {
            let p = proj(d);
+           if (p == null) return 'translate(-1024, -1024)'; //TODO: Hack to move this out
+
            return `translate(${p[0]}, ${p[1]})`
          });
 
          if (_pointsDisplay) {
            pois.call(_pointsDisplay);
          }
-      })
-      .catch(e => {
-        /* eslint-disable no-console */
-        console.error('d3-rs-geo error:', e.stack);
-        /* eslint-enable no-console */
-      });
 
+         return node;
+      })
+      .then(d => _onReady(null, d))
+      .catch(e => _onReady(e, null));
     });
     
   }
@@ -450,8 +461,8 @@ export default function geo(id) {
     return arguments.length ? (interrupted = value, _impl) : interrupted;
   };    
   
-  _impl.country = function(value) {
-    return arguments.length ? (country = value, _impl) : country;
+  _impl.geometry = function(value) {
+    return arguments.length ? (geometry = value, _impl) : geometry;
   };   
 
   _impl.fill = function(value) {
@@ -490,6 +501,9 @@ export default function geo(id) {
     return arguments.length ? (onClick = value, _impl) : onClick;
   }; 
 
+  _impl.onReady = function(value) {
+    return arguments.length ? (onReady = value, _impl) : onReady;
+  }; 
 
   return _impl;
 }
