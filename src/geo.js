@@ -173,7 +173,7 @@ export default function geo(id) {
     }
     let _onReady = onReady;
     if (_onReady == null) {
-      _onReady = function (err, ok) {
+      _onReady = function (err /* , ok  */ ) {
         if (err) {
           /* eslint-disable no-console */
           console.error('d3-rs-geo error:', err.stack);
