@@ -110,6 +110,21 @@ Click handler for map interactions. `d` will be the object of the interaction fr
 
 `d` will be null if the click was outside a country boundary.
 
+### Performance checklist
+
+As setup in the examples, the drawing of the map involves a number of heavy operations.
+
+1. Downloading the specified topojson data set.
+1. Parsing the data set.
+1. Applying the projection to convert the data into paths where the paths represent the landmass and/or the political boundaries of the planet.
+1. Performing a standard D3 `enter()/update()/exit()` pattern for the paths.
+1. Rendering the additional points and links on the map.
+
+While this is all done relatively efficiently, reducing the amount of work that needs to be done will improve performance, reduce energy consumption and free cycles for the rest of the application. You can do this by:
+
+1. Use a topojson that provides the appropriate level of detail for your application. The 50m resolution version of the world `https://static.redsift.io/thirdparty/topojson/examples/world-50m.json` is ~750kb of JSON while the 110 meter resolution version `https://static.redsift.io/thirdparty/topojson/examples/world-110m.json` is ~ 100kb. The 110m version obviously does not capture outlines and smaller islands as accurately.
+1. Load the topojson once and parse the parsed javascript object to the chart via the `datum`.
+
 ### Parameters
 
 Property|Description|Transition|Preview
@@ -122,7 +137,7 @@ Property|Description|Transition|Preview
 `graticule`|
 `projection`| http://map-projections.net/patterson.php
 `projectionScale`|
-`interrupted`| Enabled clipping for interrupted projections
+`interrupted`|*Boolean* enabled clipping for interrupted projections
 `country`|*Boolean* enable country polygons
 `fill`| Land filling
 `points`| Decimal expression of [ Longitude, Latitude ]
