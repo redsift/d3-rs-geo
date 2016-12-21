@@ -120,10 +120,11 @@ As setup in the examples, the drawing of the map involves a number of heavy oper
 1. Performing a standard D3 `enter()/update()/exit()` pattern for the paths.
 1. Rendering the additional points and links on the map.
 
-While this is all done relatively efficiently, reducing the amount of work that needs to be done will improve performance, reduce energy consumption and free cycles for the rest of the application. You can do this by:
+While this is all done relatively efficiently (once the JSON is in the network cache, a 110m world map will compute in ~200ms on a fast desktop), reducing the amount of work that needs to be done will improve performance, reduce energy consumption and free cycles for the rest of the application. You can do this by:
 
 1. Use a topojson that provides the appropriate level of detail for your application. The 50m resolution version of the world `https://static.redsift.io/thirdparty/topojson/examples/world-50m.json` is ~750kb of JSON while the 110 meter resolution version `https://static.redsift.io/thirdparty/topojson/examples/world-110m.json` is ~ 100kb. The 110m version obviously does not capture outlines and smaller islands as accurately.
-1. Load the topojson once and parse the parsed javascript object to the chart via the `datum`.
+1. Load the topojson once and parse the parsed javascript object to the chart via the `datum` indead of using the URL reference.
+1. Once your map is rendered and you do not intend the change the topology of the map itself, you can supress logic associated with refreshing the paths by setting `redrawTopology` to false e.g. you may use this when updating data points on the same map.
 
 ### Parameters
 
@@ -147,3 +148,6 @@ Property|Description|Transition|Preview
 `zoom`|
 `zoomX`, `zoomY`|
 `onClick`|
+`redrawTopology`|*Boolean* When drawing the map, redraw the topology too
+`negative`|*String* Color for the negative space in the map i.e. typically the water. When interrupted is set to false, this does not display and the `background` color shows through
+`boundary`|*String* Color for the boundaries between country polygons
