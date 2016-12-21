@@ -1,7 +1,7 @@
 import { select, mouse } from 'd3-selection';
 import { json } from 'd3-request';
 import { geoGraticule, geoPath } from 'd3-geo';
-import { symbol, symbolWye } from 'd3-shape';
+import { symbol } from 'd3-shape';
 import { max } from 'd3-array';
 import { feature, mesh, neighbors } from 'topojson';
 
@@ -58,7 +58,10 @@ import {
 const DEFAULT_SIZE = 960;
 const DEFAULT_ASPECT = { a: 480 / 960, s: 2*Math.PI };
 const DEFAULT_MARGIN = 4;  // white space
-const DEFAULT_POINT_SIZE = 24; // size of the point symbol
+const DEFAULT_POINT_SIZE = 52; // size of the point symbol
+
+const COLOR_SEA = '#010539';
+const COLOR_BOUNDARY = '#fff';
 
 let INSTANCE = 0;
 
@@ -73,6 +76,20 @@ function coerceArray(d) {
   
   return d;
 }
+
+// Concentric circles
+const SYMBOL_MAP = {
+  draw: function(context, size) {
+    let r = Math.sqrt(size / Math.PI);
+    context.moveTo(r, 0);
+    context.arc(0, 0, r, 0, 2 * Math.PI);
+    
+    r = r / 2;
+    context.moveTo(r, 0);
+    context.arc(0, 0, r, 0, 2 * Math.PI);
+  }
+};
+
 
 export default function geo(id) {
   let classed = 'chart-geo', 
@@ -96,7 +113,10 @@ export default function geo(id) {
       zoomY = undefined,
       pointsDisplay = undefined,
       linksDisplay = undefined,
+      redrawTopology = true,
       onClick = null,
+      negative = COLOR_SEA,
+      boundary = COLOR_BOUNDARY,
       onReady = null;
 
   INSTANCE = INSTANCE + 1;
@@ -142,17 +162,28 @@ export default function geo(id) {
     let _color = _makeFillFn();
 
     let _linksDisplay = linksDisplay;
-    if (_linksDisplay == undefined) {
+
+    let _linksFill = presentation10.standard[presentation10.names.yellow];
+    if (typeof _linksDisplay === 'string' || _linksDisplay instanceof String) {
+      _linksFill = _linksDisplay;
+      _linksDisplay = null;
+    }
+
+    if (_linksDisplay == null) {
       _linksDisplay = function (selection) {
-        selection.attr('stroke', presentation10.standard[presentation10.names.yellow])
+        selection.attr('stroke', _linksFill)
                   .attr('stroke-width', '2px')
                   .attr('stroke-dasharray', '5,3');
       }
     }
 
     let _pointsDisplay = pointsDisplay;
-    if (_pointsDisplay === undefined) {
-      _pointsDisplay = symbolWye;
+    let _pointsFill = null;
+    if (_pointsDisplay == null) {
+      _pointsDisplay = SYMBOL_MAP;
+    } else if (typeof _pointsDisplay === 'string' || _pointsDisplay instanceof String) {
+      _pointsDisplay = SYMBOL_MAP;
+      _pointsFill = pointsDisplay;
     }
 
     if (_pointsDisplay && typeof _pointsDisplay.draw === 'function') {
@@ -163,17 +194,16 @@ export default function geo(id) {
           let node = select(this).selectAll('path').data([ d ]);
           node = node.enter().append('path').merge(node);
           node.attr('d', () => circle())
-                .attr('opacity', 0.9)
                 .attr('stroke', '#fff')
-                .attr('fill', presentation10.darker[presentation10.names.yellow])
+                .attr('fill', _pointsFill ? _pointsFill : presentation10.darker[presentation10.names.yellow])
                 .attr('pointer-events', 'none')
-                .attr('stroke-width', '0.5px');
+                .attr('stroke-width', '1.0px');
         });
       }
     }
     let _onReady = onReady;
     if (_onReady == null) {
-      _onReady = function (err, ok) {
+      _onReady = function (err /* , ok  */ ) {
         if (err) {
           /* eslint-disable no-console */
           console.error('d3-rs-geo error:', err.stack);
@@ -242,11 +272,11 @@ export default function geo(id) {
       if (interrupted) {
         snode.select(`#${clipPath}`).datum({ type: 'Sphere' }).attr('d', path);
         snode.select('use.border').attr('xlink:href', `#${clipPath}`);
-        snode.select('use.fill').attr('xlink:href', `#${clipPath}`);
+        snode.select('use.fill').attr('xlink:href', `#${clipPath}`).attr('fill', negative);
       } else {
         snode.select(`#${clipPath}`).attr('d', null);
         snode.select('use.border').attr('xlink:href', null);
-        snode.select('use.fill').attr('xlink:href', null);
+        snode.select('use.fill').attr('xlink:href', null).attr('fill', negative);
       }
 
       g.select('path.graticule')
@@ -276,51 +306,59 @@ export default function geo(id) {
         let collection = objects[geometry];
         if (collection === undefined) throw new Error(`${geometry} is not avaiable in topojson`);
 
-        let host = g.select('g.geometry');
-        let selectable = null;
-        if (collection.type === 'GeometryCollection') {
-          let cont = feature(d, collection).features;
-          selectable = host
-            .selectAll('path')
-            .data(cont)
-            .enter()
-            .append('path');
+        if (redrawTopology === true) {
+          // More expensive, allow the user to supress this
+          let selectable = null;
 
-          // compute g, the greedy constraint color index i.e. no adjacent selectable share the same color
-          let neig = neighbors(collection.geometries);
-          selectable.attr('fill', (d,i) => _color(d, i, (d.color = max(neig[i], n => cont[n].color) + 1 | 0) ));
+          let host = g.select('g.geometry');
+          if (collection.type === 'GeometryCollection') {
+            let cont = feature(d, collection).features;
+            selectable = host
+              .selectAll('path')
+              .data(cont)
+              .enter()
+              .append('path');
 
-        } else if (collection.type === 'MultiPolygon') {
-          selectable = host.selectAll('path').data([ feature(d, objects.land || {}) ]);
-          selectable.exit().remove();
-          selectable = selectable.enter().append('path').merge(selectable);
+            // compute g, the greedy constraint color index i.e. no adjacent selectable share the same color
+            let neig = neighbors(collection.geometries);
+            selectable.attr('fill', (d,i) => _color(d, i, (d.color = max(neig[i], n => cont[n].color) + 1 | 0) ));
 
-          selectable.attr('fill', (d,i) => _color(d,i,i));
-        } else {
-          throw new Error(`Object type "${collection.type}"" is not supported`);
+          } else if (collection.type === 'MultiPolygon') {
+            selectable = host.selectAll('path').data([ feature(d, objects.land || {}) ]);
+            selectable.exit().remove();
+            selectable = selectable.enter().append('path').merge(selectable);
+
+            selectable.attr('fill', (d,i) => _color(d,i,i));
+          } else {
+            throw new Error(`Object type "${collection.type}"" is not supported`);
+          }
+
+          selectable.attr('d', path).attr('clip-path', interrupted ? `url(#${clip})` : null);
+
+          selectable.on('click', function(d,i) {
+            let centroid = null;
+            if (d && d.id) {
+              centroid = path.centroid(d);
+            } else {
+              centroid = mouse(this);
+            }
+            if (onClick) onClick.apply(_impl, [ d, i, centroid ]);
+          });
+
+          snode.select('rect.background').on('click', function() {
+            if (onClick) onClick.apply(_impl, [ null, -1, mouse(this) ]);
+          });
+
+          // boundary
+          g.select('path.boundary')
+            .datum(mesh(d, objects.countries || {}, (a, b) => a !== b))
+            .attr('clip-path', interrupted ? `url(#${clip})` : null)
+            .attr('d', path);
+
+          // end of the redraw check    
         }
 
-        selectable.attr('d', path).attr('clip-path', interrupted ? `url(#${clip})` : null);
-
-        selectable.on('click', function(d,i) {
-          let centroid = null;
-          if (d && d.id) {
-            centroid = path.centroid(d);
-          } else {
-            centroid = mouse(this);
-          }
-          if (onClick) onClick.apply(_impl, [ d, i, centroid ]);
-        });
-
-        snode.select('rect.background').on('click', function() {
-          if (onClick) onClick.apply(_impl, [ null, -1, mouse(this) ]);
-        });
-
-        // boundary
-        g.select('path.boundary')
-          .datum(mesh(d, objects.countries || {}, (a, b) => a !== b))
-          .attr('clip-path', interrupted ? `url(#${clip})` : null)
-          .attr('d', path);
+        g.select('path.boundary').attr('stroke', boundary);
 
         // Links
         let arcs = g.select('g.links')
@@ -393,10 +431,6 @@ export default function geo(id) {
                       stroke-linecap: round;
                       pointer-events: none;
                     }
-                
-                ${_impl.self()} .fill {
-                      fill: #010539;
-                    }
 
                 ${_impl.self()} .graticule {
                       fill: none;
@@ -407,7 +441,6 @@ export default function geo(id) {
 
                   ${_impl.self()} .boundary {
                     fill: none;
-                    stroke: #fff;
                     stroke-width: 0.5px;
                     pointer-events: none;
                   }
@@ -504,6 +537,18 @@ export default function geo(id) {
   _impl.onReady = function(value) {
     return arguments.length ? (onReady = value, _impl) : onReady;
   }; 
+  
+  _impl.redrawTopology = function(value) {
+    return arguments.length ? (redrawTopology = value, _impl) : redrawTopology;
+  };
+  
+  _impl.negative = function(value) {
+    return arguments.length ? (negative = value, _impl) : negative;
+  };
+
+  _impl.boundary = function(value) {
+    return arguments.length ? (boundary = value, _impl) : boundary;
+  };
 
   return _impl;
 }

@@ -1,6 +1,6 @@
 {
   "name": "@redsift/d3-rs-geo",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Generates geo maps using D3v4.",
   "keywords": [
     "maps",
@@ -24,20 +24,21 @@
   "scripts": {
     "serve": "gulp -o d3-rs-geo -g d3-selection serve",
     "build": "gulp -o d3-rs-geo -g d3-selection build",
-    "pretest": "npm outdated && npm run build",
-    "test": "tape 'test/**/*-test.js' && eslint index.js src",
+    "pretest": "npm outdated || true && npm run build",
+    "test": "tape 'test/**/*-test.js'",
+    "posttest": "eslint index.js src",
     "prepublish": "npm run build"
   },
   "dependencies": {
     "@redsift/d3-rs-svg": "~0.2.5",
     "@redsift/d3-rs-theme": "~0.4.2",
     "d3-array": "^1.0.1",
-    "d3-geo": "^1.2.4",
-    "d3-geo-projection": "^1.0.3",
+    "d3-geo": "^1.4.0",
+    "d3-geo-projection": "^1.2.1",
     "d3-request": "^1.0.2",
     "d3-selection": "^1.0.2",
     "d3-shape": "^1.0.3",
-    "topojson": "^1.6.26"
+    "topojson": "^2.2.0"
   },
   "devDependencies": {
     "@redsift/tape-reel": "~0.1.0",
