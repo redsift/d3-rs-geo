@@ -1,6 +1,6 @@
 {
   "name": "@redsift/d3-rs-geo",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Generates geo maps using D3v4.",
   "keywords": [
     "maps",
