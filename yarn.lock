@@ -75,21 +75,21 @@
     normalize-path "^2.0.1"
     through2 "^2.0.3"
 
-"@redsift/d3-rs-svg@~0.2.5":
-  version "0.2.5"
-  resolved "https://registry.yarnpkg.com/@redsift/d3-rs-svg/-/d3-rs-svg-0.2.5.tgz#8c3b3a67b6fbeba303589d40bad67ef9b7b57004"
+"@redsift/d3-rs-svg@^0.4.0":
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/@redsift/d3-rs-svg/-/d3-rs-svg-0.4.0.tgz#1e9f7d096da925b506b74b0a8f15662aff383a2c"
   dependencies:
-    d3-selection "~1.0.0"
+    d3-selection "~1.2.0"
 
-"@redsift/d3-rs-theme@~0.4.2":
+"@redsift/d3-rs-theme@^0.4.2":
   version "0.4.2"
   resolved "https://registry.yarnpkg.com/@redsift/d3-rs-theme/-/d3-rs-theme-0.4.2.tgz#76f2a7e088baf3cc08b2c7d852f512cb07868a99"
   dependencies:
     bezier-easing "^2.0.3"
 
-"@redsift/rollup-bundler@^0.3.2":
-  version "0.3.2"
-  resolved "https://registry.yarnpkg.com/@redsift/rollup-bundler/-/rollup-bundler-0.3.2.tgz#333ad04048b8dbc94d44dc6cb685dc2dd012b47f"
+"@redsift/rollup-bundler@^0.5.1":
+  version "0.5.1"
+  resolved "https://registry.yarnpkg.com/@redsift/rollup-bundler/-/rollup-bundler-0.5.1.tgz#71e6659f9aa20cf629c7cee35f14af733b837db6"
   dependencies:
     babel-core "^6.26.0"
     babel-eslint "^8.2.1"
@@ -110,7 +110,7 @@
     rollup-plugin-progress "^0.4.0"
     rollup-plugin-visualizer "^0.3.1"
 
-"@redsift/tape-reel@~0.1.0":
+"@redsift/tape-reel@^0.1.0":
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/@redsift/tape-reel/-/tape-reel-0.1.0.tgz#4627eeab5d2ff72b212d9a56128852b6181686b2"
   dependencies:
@@ -1745,9 +1745,9 @@ d3-selection@^1.0.2:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/d3-selection/-/d3-selection-1.3.0.tgz#d53772382d3dc4f7507bfb28bcd2d6aed2a0ad6d"
 
-d3-selection@~1.0.0:
-  version "1.0.6"
-  resolved "https://registry.yarnpkg.com/d3-selection/-/d3-selection-1.0.6.tgz#15332288f01f429d3d8d04051f043184d07642b9"
+d3-selection@~1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/d3-selection/-/d3-selection-1.2.0.tgz#1b8ec1c7cedadfb691f2ba20a4a3cfbeb71bbc88"
 
 d3-shape@^1.0.3:
   version "1.2.0"
