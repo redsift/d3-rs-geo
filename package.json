@@ -1,6 +1,6 @@
 {
   "name": "@redsift/d3-rs-geo",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Generates geo maps using D3v4.",
   "keywords": [
     "maps",
@@ -33,7 +33,7 @@
     "posttest": "eslint index.js src"
   },
   "dependencies": {
-    "@redsift/d3-rs-svg": "^0.4.0",
+    "@redsift/d3-rs-svg": "^0.5.2",
     "@redsift/d3-rs-theme": "^0.4.2",
     "d3-array": "^1.0.1",
     "d3-geo": "^1.4.0",
