@@ -92,7 +92,7 @@ const SYMBOL_MAP = {
 
 
 export default function geo(id) {
-  let classed = 'chart-geo', 
+  let classed = 'chart-geo-test', 
       theme = 'light',
       background = undefined,
       width = DEFAULT_SIZE,
