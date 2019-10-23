@@ -387,6 +387,7 @@ export default function geo(id) {
          pois = pois.enter().append('g').merge(pois);
 
          pois.attr('transform', d => {
+           console.log('d', d);
            let p = proj(d);
            if (p == null) return 'translate(-1024, -1024)'; //TODO: Hack to move this out
 
