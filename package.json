@@ -1,6 +1,6 @@
 {
   "name": "@redsift/d3-rs-geo",
-  "version": "0.0.5",
+  "version": "0.1.2",
   "description": "Generates geo maps using D3v4.",
   "keywords": [
     "maps",
@@ -14,24 +14,27 @@
     "name": "Rahul Powar",
     "url": "https://medium.com/@rahulpowar"
   },
-  "main": "distribution/d3-rs-geo.umd-es2015.js",
-  "browser": "distribution/d3-rs-geo.umd-es2015.min.js",
-  "jsnext:main": "index.js",
+  "module": "dist/d3-rs-geo.esm.js",
+  "jsnext:main": "dist/d3-rs-geo.esm.js",
+  "main": "dist/d3-rs-geo.umd.min.js",
+  "browser": "dist/d3-rs-geo.umd.min.js",
+  "esnext": "src/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/redsift/d3-rs-geo.git"
   },
   "scripts": {
     "serve": "gulp -o d3-rs-geo -g d3-selection serve",
-    "build": "gulp -o d3-rs-geo -g d3-selection build",
+    "prepublish": "npm run clean; npm run build",
+    "build": "npm run clean; node ./node_modules/@redsift/rollup-bundler/src/index.js bundle.config.js",
+    "clean": "rm -rf dist",
     "pretest": "npm outdated || true && npm run build",
     "test": "tape 'test/**/*-test.js'",
-    "posttest": "eslint index.js src",
-    "prepublish": "npm run build"
+    "posttest": "eslint index.js src"
   },
   "dependencies": {
-    "@redsift/d3-rs-svg": "~0.2.5",
-    "@redsift/d3-rs-theme": "~0.4.2",
+    "@redsift/d3-rs-svg": "^0.5.2",
+    "@redsift/d3-rs-theme": "^0.4.2",
     "d3-array": "^1.0.1",
     "d3-geo": "^1.4.0",
     "d3-geo-projection": "^1.2.1",
@@ -41,7 +44,10 @@
     "topojson-client": "^3.1.0"
   },
   "devDependencies": {
-    "@redsift/tape-reel": "~0.1.0",
+    "@redsift/rollup-bundler": "^0.5.1",
+    "@redsift/tape-reel": "^0.1.0",
+    "babel-plugin-external-helpers": "^6.22.0",
+    "babel-preset-env": "^1.6.1",
     "browser-sync": "^2.14.0",
     "del": "^2.2.2",
     "eslint": "^3.3.1",
