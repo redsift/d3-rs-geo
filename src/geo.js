@@ -3,7 +3,7 @@ import { json } from 'd3-request';
 import { geoGraticule, geoPath } from 'd3-geo';
 import { symbol } from 'd3-shape';
 import { max } from 'd3-array';
-import { feature, mesh, neighbors } from 'topojson';
+import { feature, mesh, neighbors } from 'topojson-client';
 
 import { 
   geoAlbers,
